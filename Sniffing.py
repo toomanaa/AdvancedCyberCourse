@@ -2,14 +2,20 @@ import socket  # For creating and managing sockets
 import struct  # For unpacking binary data into Python-readable formats
 import binascii  # For converting binary data to ASCII representation
 
-# Automatically detect the IP address of the host machine
-host = socket.gethostbyname(socket.gethostname())
-print(f"Monitoring host IP: {host}")
+# Function to format MAC address
+def format_mac_address(mac):
+    """Convert a binary MAC address to a human-readable format."""
+    mac_address = binascii.hexlify(mac).decode()  # Convert to hexadecimal string
+    return ':'.join(mac_address[i:i+2] for i in range(0, len(mac_address), 2))
 
 # Create a raw socket for sniffing network packets
+# AF_INET indicates IPv4, SOCK_RAW specifies raw sockets, IPPROTO_IP captures all IP packets
 s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_IP)
 
-# Bind the socket to the detected host IP on any port (port 0 indicates all ports)
+# Ask the user to specify the host (IP address) to monitor
+host = input("Enter the host (IP address) you would like to monitor: ")
+
+# Bind the socket to the host on any port (port 0 indicates all ports)
 s.bind((host, 0))
 
 # Include IP headers in the captured packets
@@ -30,10 +36,11 @@ while True:
         eth_header = struct.unpack("!6s6s2s", ethernet_header)  # Unpack MAC addresses and EtherType
 
         # Convert the MAC addresses to human-readable hexadecimal format
+        # Use the formatting function for MAC addresses
         print("Destination MAC: %s Source MAC: %s Type: %s" % (
-            binascii.hexlify(eth_header[0]),  # Destination MAC
-            binascii.hexlify(eth_header[1]),  # Source MAC
-            binascii.hexlify(eth_header[2])   # EtherType
+            format_mac_address(eth_header[0]),  # Destination MAC
+            format_mac_address(eth_header[1]),  # Source MAC
+            binascii.hexlify(eth_header[2]).decode()  # EtherType
         ))
 
         # Extract the next 20 bytes for the IP header
